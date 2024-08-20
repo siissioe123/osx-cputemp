@@ -1,0 +1,4 @@
+pyobjc-framework-Cocoa
+Foundation
+AppKit
+pyobjc-core
