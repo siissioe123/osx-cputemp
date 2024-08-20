@@ -2,6 +2,7 @@ import subprocess
 import math
 import webbrowser
 import os
+import toml
 from Foundation import NSDate, NSObject
 from AppKit import NSApplication, NSStatusBar, NSStatusItem, NSMenu, NSMenuItem, NSImage, NSTimer, NSRunLoop, NSDefaultRunLoopMode, NSAppearance
 from AppKit import NSApplicationActivationPolicyProhibited
@@ -12,9 +13,13 @@ class CPUStatusApp(NSObject):
     statusitem = None
     timer = None
     use_fahrenheit = False
+    cpu_temp_cmd = 'bin/osx-cpu-temp'  # Default path to osx-cpu-temp
 
     def applicationDidFinishLaunching_(self, notification):
-        # Set the activation policy to hide dock icon
+        self.ensure_cpu_temp_built()
+        self.load_settings()
+        
+        # Set the activation policy to hide the dock icon
         NSApplication.sharedApplication().setActivationPolicy_(NSApplicationActivationPolicyProhibited)
 
         # Create the menu bar with a fixed length
@@ -34,12 +39,12 @@ class CPUStatusApp(NSObject):
 
         # Celsius Option
         self.celsiusMenuItem = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Celsius", "toggleCelsius:", "")
-        self.celsiusMenuItem.setState_(1)  # Initially selected
+        self.celsiusMenuItem.setState_(1 if self.use_fahrenheit == False else 0)  # Based on loaded settings
         self.menu.addItem_(self.celsiusMenuItem)
         
         # Fahrenheit Option
         self.fahrenheitMenuItem = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("Fahrenheit", "toggleFahrenheit:", "")
-        self.fahrenheitMenuItem.setState_(0)  # Initially not selected
+        self.fahrenheitMenuItem.setState_(1 if self.use_fahrenheit == True else 0)  # Based on loaded settings
         self.menu.addItem_(self.fahrenheitMenuItem)
 
         # Add break line
@@ -47,12 +52,12 @@ class CPUStatusApp(NSObject):
 
         # Menu Item for CPU
         self.cpuMenuItem = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("CPU", "toggleCPU:", "")
-        self.cpuMenuItem.setState_(1)  # Initially checked
+        self.cpuMenuItem.setState_(1 if self.settings.get('cpu', True) else 0)  # Based on loaded settings
         self.menu.addItem_(self.cpuMenuItem)
         
         # Menu Item for GPU
         self.gpuMenuItem = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("GPU", "toggleGPU:", "")
-        self.gpuMenuItem.setState_(0)  # Initially unchecked
+        self.gpuMenuItem.setState_(1 if self.settings.get('gpu', False) else 0)  # Based on loaded settings
         self.menu.addItem_(self.gpuMenuItem)
 
         # Break line
@@ -78,6 +83,55 @@ class CPUStatusApp(NSObject):
         NSRunLoop.currentRunLoop().addTimer_forMode_(self.timer, NSDefaultRunLoopMode)
         self.timer.fire()
 
+    def ensure_cpu_temp_built(self):
+        config_path = 'config.toml'
+        if not os.path.isfile(config_path):
+            # Ensure the `osx-cpu-temp` is built and available
+            project_dir = 'osx-cpu-temp-master'
+            bin_dir = 'bin'
+            
+            # Run `make` to build the executable
+            subprocess.run(['make'], cwd=project_dir, check=True)
+            
+            # Ensure the bin directory exists
+            if not os.path.exists(bin_dir):
+                os.makedirs(bin_dir)
+            
+            # Move the executable to the bin directory
+            executable_src = os.path.join(project_dir, 'osx-cpu-temp')
+            executable_dst = os.path.join(bin_dir, 'osx-cpu-temp')
+            if os.path.isfile(executable_src):
+                os.rename(executable_src, executable_dst)
+                self.cpu_temp_cmd = executable_dst
+                
+                # Create a default config.toml file
+                self.create_default_config()
+            else:
+                raise FileNotFoundError(f"Expected executable not found: {executable_src}")
+
+    def create_default_config(self):
+        default_settings = {
+            'cpu': True,
+            'gpu': False,
+            'fahrenheit': False
+        }
+        with open('config.toml', 'w') as config_file:
+            toml.dump(default_settings, config_file)
+
+    def load_settings(self):
+        config_path = 'config.toml'
+        if os.path.isfile(config_path):
+            self.settings = toml.load(config_path)
+            self.use_fahrenheit = self.settings.get('fahrenheit', False)
+        else:
+            # Default settings if config.toml is missing
+            self.settings = {
+                'cpu': True,
+                'gpu': False,
+                'fahrenheit': False
+            }
+            self.use_fahrenheit = False
+
     def updateGithubIcon(self):
         # Determine current appearance mode
         appearance = NSApplication.sharedApplication().effectiveAppearance()
@@ -100,6 +154,7 @@ class CPUStatusApp(NSObject):
             self.celsiusMenuItem.setState_(1)
             self.fahrenheitMenuItem.setState_(0)
             self.updateTemperature_(None)
+            self.save_settings()
 
     def toggleFahrenheit_(self, sender):
         if not self.fahrenheitMenuItem.state():
@@ -107,16 +162,19 @@ class CPUStatusApp(NSObject):
             self.fahrenheitMenuItem.setState_(1)
             self.celsiusMenuItem.setState_(0)
             self.updateTemperature_(None)
+            self.save_settings()
 
     def toggleCPU_(self, sender):
         current_state = self.cpuMenuItem.state()
         self.cpuMenuItem.setState_(0 if current_state else 1)
         self.updateTemperature_(None)
+        self.save_settings()
 
     def toggleGPU_(self, sender):
         current_state = self.gpuMenuItem.state()
         self.gpuMenuItem.setState_(0 if current_state else 1)
         self.updateTemperature_(None)
+        self.save_settings()
 
     def openGithub_(self, sender):
         # Open the GitHub URL in web browser
@@ -156,8 +214,8 @@ class CPUStatusApp(NSObject):
 
     def get_cpu_temp(self):
         try:
-            # Run the osx-cpu-temp command and get  output
-            command = ['osx-cpu-temp']
+            # Run the osx-cpu-temp command and get output
+            command = [self.cpu_temp_cmd]
             if self.use_fahrenheit:
                 command.append('-F')
             result = subprocess.run(command, capture_output=True, text=True)
@@ -170,7 +228,7 @@ class CPUStatusApp(NSObject):
     def get_gpu_temp(self):
         try:
             # Run "osx-cpu-temp -g" command to get GPU temperature
-            command = ['osx-cpu-temp', '-g']
+            command = [self.cpu_temp_cmd, '-g']
             if self.use_fahrenheit:
                 command.append('-F')
             result = subprocess.run(command, capture_output=True, text=True)
@@ -185,6 +243,13 @@ class CPUStatusApp(NSObject):
             return None
         # Round the temperature
         return math.ceil(temp) if temp % 1 >= 0.5 else math.floor(temp)
+
+    def save_settings(self):
+        self.settings['cpu'] = self.cpuMenuItem.state() == 1
+        self.settings['gpu'] = self.gpuMenuItem.state() == 1
+        self.settings['fahrenheit'] = self.use_fahrenheit
+        with open('config.toml', 'w') as config_file:
+            toml.dump(self.settings, config_file)
 
 if __name__ == "__main__":
     app = NSApplication.sharedApplication()
