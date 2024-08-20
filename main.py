@@ -1,7 +1,7 @@
 import subprocess
 import math
-import webbrowser  # Import webbrowser for opening URLs
-import os  # For file path handling
+import webbrowser
+import os
 from Foundation import NSDate, NSObject
 from AppKit import NSApplication, NSStatusBar, NSStatusItem, NSMenu, NSMenuItem, NSImage, NSTimer, NSRunLoop, NSDefaultRunLoopMode, NSAppearance
 from AppKit import NSApplicationActivationPolicyProhibited
