@@ -8,19 +8,6 @@
 
 ### 📚 Prerequisites
 - Install Python from the [official website](https://www.python.org/) (latest version) and ensure it is added to the system PATH and environment variables.
-- Homebrew
-
-  Install Homebrew by running:
-  ```bash
-  /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-  ```
-
-- [osx-cpu-temp](https://github.com/lavoiesl/osx-cpu-temp)
-
-  Install `osx-cpu-temp` via Homebrew:
-  ```bash
-  brew install osx-cpu-temp
-  ```
 
 ### Installation 📥
 To set up `osx-cputemp`, follow these steps:
