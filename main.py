@@ -1,26 +1,7 @@
-"""    osx-cputemp tells you your CPU temp
-    Copyright (C) 2024  Siissioe123
-
-    This program is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
-    
-If you got any questions/concerns, conact me at siissioe123@gmail.com
-"""
-
 import subprocess
 import math
-import webbrowser
-import os
+import webbrowser  # Import webbrowser for opening URLs
+import os  # For file path handling
 from Foundation import NSDate, NSObject
 from AppKit import NSApplication, NSStatusBar, NSStatusItem, NSMenu, NSMenuItem, NSImage, NSTimer, NSRunLoop, NSDefaultRunLoopMode, NSAppearance
 from AppKit import NSApplicationActivationPolicyProhibited
@@ -38,7 +19,7 @@ class CPUStatusApp(NSObject):
 
         # Create the menu bar with a fixed length
         self.statusbar = NSStatusBar.systemStatusBar()
-        self.statusitem = self.statusbar.statusItemWithLength_(140)  #  Default: 140
+        self.statusitem = self.statusbar.statusItemWithLength_(140)  # Initially set to 140 points
 
         # The green dot that appears on the menu bar
         self.statusitem.setImage_(NSImage.imageNamed_("NSStatusAvailable"))
@@ -80,10 +61,10 @@ class CPUStatusApp(NSObject):
         # Add and create github menu item (with icon)
         self.githubMenuItem = NSMenuItem.alloc().initWithTitle_action_keyEquivalent_("", "openGithub:", "")
         self.updateGithubIcon()
-        self.githubMenuItem.setTitle_(" Github")  # Space to amke room for the icon
+        self.githubMenuItem.setTitle_(" Github")  # Space added before text to make room for the icon
         self.menu.addItem_(self.githubMenuItem)
 
-        # Break line
+        # Add a separator line before the Quit option
         self.menu.addItem_(NSMenuItem.separatorItem())
         
         # Quit Option
@@ -92,23 +73,23 @@ class CPUStatusApp(NSObject):
         
         self.statusitem.setMenu_(self.menu)
 
-        # Start timer to update the temperatures
+        # Start timer to update temperature
         self.timer = NSTimer.alloc().initWithFireDate_interval_target_selector_userInfo_repeats_(NSDate.date(), 1.0, self, 'updateTemperature:', None, True)
         NSRunLoop.currentRunLoop().addTimer_forMode_(self.timer, NSDefaultRunLoopMode)
         self.timer.fire()
 
     def updateGithubIcon(self):
-        # Determine current appearance mode (light or dark)
+        # Determine current appearance mode
         appearance = NSApplication.sharedApplication().effectiveAppearance()
         appearance_name = appearance.name()
 
-        # Set image based on the appearance mode
+        # Set the appropriate logo based on current appearance mode
         if appearance_name == "NSAppearanceNameDarkAqua":
             image_name = 'Github_dark00000'
         else:
             image_name = 'Github_light00000'
 
-        # Load and set the image
+        # Load and set image
         image_path = os.path.join('assets', 'Github-Logos', f'{image_name}.png')
         github_icon = NSImage.alloc().initByReferencingFile_(image_path)
         self.githubMenuItem.setImage_(github_icon)
@@ -138,7 +119,7 @@ class CPUStatusApp(NSObject):
         self.updateTemperature_(None)
 
     def openGithub_(self, sender):
-        # Open GitHub URL in the web browser
+        # Open the GitHub URL in web browser
         webbrowser.open("https://github.com/siissioe123/osx-cputemp")
 
     def updateTemperature_(self, timer):
@@ -149,14 +130,14 @@ class CPUStatusApp(NSObject):
             if temp is not None:
                 rounded_temp = self.round_temp(temp)
                 unit = 'F' if self.use_fahrenheit else 'C'
-                temp_display.append(f"CPU: {rounded_temp}{unit}")
+                temp_display.append(f"CPU: {rounded_temp}°{unit}")
         
         if self.gpuMenuItem.state() == 1:
             temp = self.get_gpu_temp()
             if temp is not None:
                 rounded_temp = self.round_temp(temp)
                 unit = 'F' if self.use_fahrenheit else 'C'
-                temp_display.append(f"GPU: {rounded_temp}{unit}")
+                temp_display.append(f"GPU: {rounded_temp}°{unit}")
 
         # Join the selected items with " | "
         if temp_display:
@@ -165,7 +146,7 @@ class CPUStatusApp(NSObject):
             # Display "osx-cputemp" if nothing is selected
             self.statusitem.setTitle_("osx-cputemp")
 
-        # Adjust the width of the status item based on the selection
+        # Adjust the width of status item based on the selection
         if len(temp_display) == 1:
             self.statusitem.setLength_(100)
         elif len(temp_display) == 2:
@@ -175,7 +156,7 @@ class CPUStatusApp(NSObject):
 
     def get_cpu_temp(self):
         try:
-            # Run osx-cpu-temp command and get output
+            # Run the osx-cpu-temp command and get  output
             command = ['osx-cpu-temp']
             if self.use_fahrenheit:
                 command.append('-F')
@@ -188,7 +169,7 @@ class CPUStatusApp(NSObject):
 
     def get_gpu_temp(self):
         try:
-            # Run osx-cpu-temp -g command to get GPU temperature
+            # Run "osx-cpu-temp -g" command to get GPU temperature
             command = ['osx-cpu-temp', '-g']
             if self.use_fahrenheit:
                 command.append('-F')
