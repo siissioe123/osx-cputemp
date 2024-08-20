@@ -1,0 +1,4 @@
+[settings]
+use_fahrenheit = false
+cpu_enabled = true
+gpu_enabled = true
