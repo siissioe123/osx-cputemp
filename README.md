@@ -12,7 +12,7 @@
   ```
   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
   ```
-- "osx-cpu-temp"
+- [osx-cpu-temp](https://github.com/lavoiesl/osx-cpu-temp)
   ```
   brew install osx-cpu-temp
   ```
